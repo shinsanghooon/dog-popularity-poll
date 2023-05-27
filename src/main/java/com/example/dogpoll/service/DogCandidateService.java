@@ -6,8 +6,9 @@ import com.example.dogpoll.dto.UpdateProfileImageDto;
 import com.example.dogpoll.entity.DogCandidate;
 import com.example.dogpoll.repository.DogCandidateRepository;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class DogCandidateService {
      * @param pageable
      * @return 전체 강아지 리스트
      */
+    @Cacheable(cacheNames = "allDogCandidatesCache", key="#root.methodName")
     public List<DogCandidateResponseDto> readAllDogCandidates(Pageable pageable) {
         Page<DogCandidate> allDogCandidates = dogCandidateRepository.findAll(pageable);
 
@@ -32,7 +34,7 @@ public class DogCandidateService {
             .getContent()
             .stream()
             .map(DogCandidateResponseDto::fromEntity)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -40,6 +42,7 @@ public class DogCandidateService {
      * @param id 강아지 id
      * @return 조회 요청 강아지
      */
+    @Cacheable(cacheNames = "dogCandidateCache", key="#id")
     public DogCandidateResponseDto readDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
         return DogCandidateResponseDto.fromEntity(dogCandidate);
@@ -61,6 +64,7 @@ public class DogCandidateService {
      * 강아지 후보 삭제
      * @param id 삭제 요청 id
      */
+    @CacheEvict(value="dogCandidateCache", key="#id")
     public void deleteDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
         dogCandidate.delete();
