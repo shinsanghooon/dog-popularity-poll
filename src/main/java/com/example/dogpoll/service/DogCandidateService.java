@@ -87,4 +87,16 @@ public class DogCandidateService {
             .orElseThrow(() -> new IllegalArgumentException("해당 id에 대한 정보가 없습니다."));
     }
 
+    public DogCandidateResponseDto voteToDogCandidate(Long id) {
+        DogCandidate dogCandidate = getDogCandidate(id);
+        dogCandidate.getVote();
+        return DogCandidateResponseDto.fromEntity(dogCandidate);
+    }
+
+    public DogCandidateResponseDto cancelVoteToDogCandidate(Long id) {
+        DogCandidate dogCandidate = getDogCandidate(id);
+        dogCandidate.cancelVote();
+        return DogCandidateResponseDto.fromEntity(dogCandidate);
+    }
+
 }

@@ -43,4 +43,12 @@ public class DogCandidate extends BaseEntity{
         this.profileImageUrl = profileImageUrl;
     }
 
+    public void getVote() {
+        this.votesCount += 1;
+    }
+
+    public void cancelVote() {
+        this.votesCount -= 1;
+    }
+
 }
