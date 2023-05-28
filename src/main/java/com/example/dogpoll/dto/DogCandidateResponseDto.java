@@ -1,6 +1,5 @@
 package com.example.dogpoll.dto;
 
-
 import com.example.dogpoll.entity.DogCandidate;
 import lombok.Getter;
 import lombok.Builder;
@@ -20,6 +19,8 @@ public class DogCandidateResponseDto {
 
     private int votesCount;
 
+    private boolean myVote = false;
+
     @Builder
     public DogCandidateResponseDto(Long id, String name, String profileUrl, String description,
         int votesCount) {
@@ -38,6 +39,10 @@ public class DogCandidateResponseDto {
             .description(dogCandidate.getDescription())
             .votesCount(dogCandidate.getVotesCount())
             .build();
+    }
+
+    public void markVoted() {
+            this.myVote = true;
     }
 
 }

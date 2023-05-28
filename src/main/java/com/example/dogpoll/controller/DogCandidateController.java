@@ -30,7 +30,7 @@ public class DogCandidateController {
     @ResponseStatus(HttpStatus.OK)
     @GetMapping
     public List<DogCandidateResponseDto> readAllDogCandidates(Pageable pageable) {
-        return dogCandidateService.readAllDogCandidates(pageable);
+        return dogCandidateService.readAllDogCandidates(pageable).getDogCandidateResponseDtos();
     }
 
     @Operation(summary = "특정 강아지 후보 조회")

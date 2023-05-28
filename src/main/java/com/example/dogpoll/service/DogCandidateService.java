@@ -2,10 +2,16 @@ package com.example.dogpoll.service;
 
 import com.example.dogpoll.dto.DogCandidateRequestDto;
 import com.example.dogpoll.dto.DogCandidateResponseDto;
+import com.example.dogpoll.dto.DogCandidateResponseDtos;
 import com.example.dogpoll.dto.UpdateProfileImageDto;
 import com.example.dogpoll.entity.DogCandidate;
+import com.example.dogpoll.entity.DogPollDuplicateCheck;
 import com.example.dogpoll.repository.DogCandidateRepository;
+import com.example.dogpoll.repository.DogPollDuplicateCheckRepository;
+import com.example.dogpoll.util.IpChecker;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -21,20 +27,37 @@ public class DogCandidateService {
 
     private final DogCandidateRepository dogCandidateRepository;
 
+    private final DogPollDuplicateCheckRepository dogPollDuplicateCheckRepository;
+
     /**
      * 전체 강아지 목록 조회
      * @param pageable
      * @return 전체 강아지 리스트
      */
     @Cacheable(cacheNames = "allDogCandidatesCache", key="#root.methodName")
-    public List<DogCandidateResponseDto> readAllDogCandidates(Pageable pageable) {
+    public DogCandidateResponseDtos readAllDogCandidates(Pageable pageable) {
         Page<DogCandidate> allDogCandidates = dogCandidateRepository.findAll(pageable);
 
-        return allDogCandidates
+        String ip = IpChecker.getClientIp();
+        Map<Long, DogPollDuplicateCheck> dogPollMap = createDogPollMap(
+            ip);
+
+        List<DogCandidateResponseDto> dogCandidateResponseDtos = allDogCandidates
             .getContent()
             .stream()
             .map(DogCandidateResponseDto::fromEntity)
             .toList();
+
+        dogCandidateResponseDtos.forEach(responseDtos -> {
+            DogPollDuplicateCheck dogPollDuplicateCheck = dogPollMap.get(responseDtos.getId());
+            if (dogPollDuplicateCheck != null) {
+                if (ip.equals(dogPollDuplicateCheck.getUserIp())) {
+                    responseDtos.markVoted();
+                }
+            }
+        });
+
+        return new DogCandidateResponseDtos(dogCandidateResponseDtos);
     }
 
     /**
@@ -45,7 +68,29 @@ public class DogCandidateService {
     @Cacheable(cacheNames = "dogCandidateCache", key="#id")
     public DogCandidateResponseDto readDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
-        return DogCandidateResponseDto.fromEntity(dogCandidate);
+
+        String ip = IpChecker.getClientIp();
+        Map<Long, DogPollDuplicateCheck> dogPollMap = createDogPollMap(ip);
+
+        DogCandidateResponseDto dogCandidateResponseDto = DogCandidateResponseDto.fromEntity(
+            dogCandidate);
+
+        DogPollDuplicateCheck dogPollDuplicateCheck = dogPollMap.get(dogCandidateResponseDto.getId());
+        if (dogPollDuplicateCheck != null) {
+            if (ip.equals(dogPollDuplicateCheck.getUserIp())) {
+                dogCandidateResponseDto.markVoted();
+            }
+        }
+
+        return dogCandidateResponseDto;
+    }
+
+    private Map<Long, DogPollDuplicateCheck> createDogPollMap(String ip) {
+        List<DogPollDuplicateCheck> myDogCandidates = dogPollDuplicateCheckRepository.findByUserIp(
+            ip);
+        return myDogCandidates
+            .stream()
+            .collect(Collectors.toMap(DogPollDuplicateCheck::getDogCandidateId, dogPoll -> dogPoll));
     }
 
     /**
