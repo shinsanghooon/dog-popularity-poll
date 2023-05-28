@@ -8,12 +8,12 @@ import com.example.dogpoll.entity.DogCandidate;
 import com.example.dogpoll.entity.DogPollDuplicateCheck;
 import com.example.dogpoll.repository.DogCandidateRepository;
 import com.example.dogpoll.repository.DogPollDuplicateCheckRepository;
-import com.example.dogpoll.util.IpChecker;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,11 +34,11 @@ public class DogCandidateService {
      * @param pageable
      * @return 전체 강아지 리스트
      */
-    @Cacheable(cacheNames = "allDogCandidatesCache", key="#root.methodName")
-    public DogCandidateResponseDtos readAllDogCandidates(Pageable pageable) {
+    @Cacheable(cacheNames = "allDogCandidatesCache", key="#ip")
+    public DogCandidateResponseDtos readAllDogCandidates(Pageable pageable, String ip) {
+
         Page<DogCandidate> allDogCandidates = dogCandidateRepository.findAll(pageable);
 
-        String ip = IpChecker.getClientIp();
         Map<Long, DogPollDuplicateCheck> dogPollMap = createDogPollMap(
             ip);
 
@@ -49,12 +49,7 @@ public class DogCandidateService {
             .toList();
 
         dogCandidateResponseDtos.forEach(responseDtos -> {
-            DogPollDuplicateCheck dogPollDuplicateCheck = dogPollMap.get(responseDtos.getId());
-            if (dogPollDuplicateCheck != null) {
-                if (ip.equals(dogPollDuplicateCheck.getUserIp())) {
-                    responseDtos.markVoted();
-                }
-            }
+            responseDtos.updateMyVote(ip, dogPollMap);
         });
 
         return new DogCandidateResponseDtos(dogCandidateResponseDtos);
@@ -65,25 +60,19 @@ public class DogCandidateService {
      * @param id 강아지 id
      * @return 조회 요청 강아지
      */
-    @Cacheable(cacheNames = "dogCandidateCache", key="#id")
-    public DogCandidateResponseDto readDogCandidate(Long id) {
+    @Cacheable(cacheNames = "dogCandidateCache", key = "#id")
+    public DogCandidateResponseDto readDogCandidate(Long id, String ip) {
         DogCandidate dogCandidate = getDogCandidate(id);
-
-        String ip = IpChecker.getClientIp();
-        Map<Long, DogPollDuplicateCheck> dogPollMap = createDogPollMap(ip);
 
         DogCandidateResponseDto dogCandidateResponseDto = DogCandidateResponseDto.fromEntity(
             dogCandidate);
 
-        DogPollDuplicateCheck dogPollDuplicateCheck = dogPollMap.get(dogCandidateResponseDto.getId());
-        if (dogPollDuplicateCheck != null) {
-            if (ip.equals(dogPollDuplicateCheck.getUserIp())) {
-                dogCandidateResponseDto.markVoted();
-            }
-        }
+        Map<Long, DogPollDuplicateCheck> dogPollMap = createDogPollMap(ip);
+        dogCandidateResponseDto.updateMyVote(ip, dogPollMap);
 
         return dogCandidateResponseDto;
     }
+
 
     private Map<Long, DogPollDuplicateCheck> createDogPollMap(String ip) {
         List<DogPollDuplicateCheck> myDogCandidates = dogPollDuplicateCheckRepository.findByUserIp(
@@ -109,18 +98,18 @@ public class DogCandidateService {
      * 강아지 후보 삭제
      * @param id 삭제 요청 id
      */
-    @CacheEvict(value="dogCandidateCache", key="#id")
+    @CacheEvict(value="dogCandidateCache", key = "#id")
     public void deleteDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
         dogCandidate.delete();
     }
-
 
     /**
      * 강아지 이미지 사진 변경
      * @param id
      * @param updateProfileImageDto
      */
+    @CachePut(cacheNames = "dogCandidateCache", key = "#id")
     public void updateProfileImage(Long id, UpdateProfileImageDto updateProfileImageDto) {
         DogCandidate dogCandidate = getDogCandidate(id);
         dogCandidate.updateProfileImageUrl(updateProfileImageDto.getProfileImageUrl());
@@ -136,12 +125,14 @@ public class DogCandidateService {
             .orElseThrow(() -> new IllegalArgumentException("해당 id에 대한 정보가 없습니다."));
     }
 
+    @CachePut(cacheNames = "dogCandidateCache", key = "#id")
     public DogCandidateResponseDto voteToDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
         dogCandidate.getVote();
         return DogCandidateResponseDto.fromEntity(dogCandidate);
     }
 
+    @CachePut(cacheNames = "dogCandidateCache", key = "#id")
     public DogCandidateResponseDto cancelVoteToDogCandidate(Long id) {
         DogCandidate dogCandidate = getDogCandidate(id);
         dogCandidate.cancelVote();

@@ -1,6 +1,8 @@
 package com.example.dogpoll.dto;
 
 import com.example.dogpoll.entity.DogCandidate;
+import com.example.dogpoll.entity.DogPollDuplicateCheck;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -41,8 +43,13 @@ public class DogCandidateResponseDto {
             .build();
     }
 
-    public void markVoted() {
-            this.myVote = true;
+    public void updateMyVote(String ip, Map<Long, DogPollDuplicateCheck> dogPollMap) {
+        DogPollDuplicateCheck dogPollDuplicateCheck = dogPollMap.get(id);
+        if (dogPollDuplicateCheck != null) {
+            if (ip.equals(dogPollDuplicateCheck.getUserIp())) {
+                this.myVote = true;
+            }
+        }
     }
 
 }

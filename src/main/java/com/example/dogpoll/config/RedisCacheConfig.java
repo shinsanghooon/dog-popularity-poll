@@ -18,7 +18,7 @@ public class RedisCacheConfig {
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration configuration = RedisCacheConfiguration.defaultCacheConfig()
             .disableCachingNullValues()
-            .entryTtl(Duration.ofSeconds(10))
+            .entryTtl(Duration.ofSeconds(30))
             .computePrefixWith(CacheKeyPrefix.simple())
             .serializeKeysWith(
                 SerializationPair.fromSerializer(new StringRedisSerializer())

@@ -4,6 +4,7 @@ import com.example.dogpoll.dto.DogCandidateRequestDto;
 import com.example.dogpoll.dto.DogCandidateResponseDto;
 import com.example.dogpoll.dto.UpdateProfileImageDto;
 import com.example.dogpoll.service.DogCandidateService;
+import com.example.dogpoll.util.IpChecker;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,14 +31,16 @@ public class DogCandidateController {
     @ResponseStatus(HttpStatus.OK)
     @GetMapping
     public List<DogCandidateResponseDto> readAllDogCandidates(Pageable pageable) {
-        return dogCandidateService.readAllDogCandidates(pageable).getDogCandidateResponseDtos();
+        String ip = IpChecker.getClientIp();
+        return dogCandidateService.readAllDogCandidates(pageable, ip).getDogCandidateResponseDtos();
     }
 
     @Operation(summary = "특정 강아지 후보 조회")
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{id}")
     public DogCandidateResponseDto readDogCandidate(@PathVariable("id") Long id) {
-        return dogCandidateService.readDogCandidate(id);
+        String ip = IpChecker.getClientIp();
+        return dogCandidateService.readDogCandidate(id, ip);
     }
 
     @Operation(summary = "강아지 후보 등록")
