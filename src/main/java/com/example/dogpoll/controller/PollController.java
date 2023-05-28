@@ -2,6 +2,7 @@ package com.example.dogpoll.controller;
 
 import com.example.dogpoll.dto.PollRequestDto;
 import com.example.dogpoll.service.PollService;
+import io.swagger.v3.oas.annotations.Operation;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class PollController {
 
     private final PollService pollService;
 
+    @Operation(summary = "강아지 후보 투표")
     @ResponseStatus(HttpStatus.OK)
     @PostMapping()
     public void pollToDogCandidate(@RequestBody PollRequestDto pollRequestDto) {
